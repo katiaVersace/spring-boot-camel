@@ -59,9 +59,10 @@
 
         <dependency>
             <groupId>org.apache.camel</groupId>
-            <artifactId>camel-http</artifactId>
+            <artifactId>camel-http4</artifactId>
             <version>${camel.version}</version>
         </dependency>
+
 
         <!-- https://mvnrepository.com/artifact/org.apache.camel/camel-spring-redis-starter -->
         <dependency>

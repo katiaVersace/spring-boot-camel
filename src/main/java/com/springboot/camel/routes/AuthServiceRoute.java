@@ -2,13 +2,10 @@ package com.springboot.camel.routes;
 
 import com.springboot.camel.StoredCookie;
 import com.springboot.camel.model.EmployeeDto;
-import com.springboot.camel.model.TeamDto;
-import org.apache.camel.CamelContext;
+import com.springboot.camel.processor.CookieProcessor;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.component.jackson.JacksonDataFormat;
-import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.model.dataformat.JsonLibrary;
 import org.apache.camel.model.rest.RestBindingMode;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,7 +15,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class AuthServiceRoute extends RouteBuilder {
 
-    private final String URI_LOGIN_SERVICE = "http://localhost:8080/auth";
+    private final String URI_LOGIN_SERVICE = "http4://localhost:8080/auth";
 
 
     @Value("${server.port}")
@@ -51,14 +48,14 @@ public class AuthServiceRoute extends RouteBuilder {
                 .bindingMode(RestBindingMode.auto)
                 .enableCORS(true).outType(String.class).to("direct:login")
 
-                .get("/logout").produces(String.valueOf(MediaType.APPLICATION_JSON)).bindingMode(RestBindingMode.auto).outType(String.class).to("direct:logout")
-        ;
+                //GET http://localhost:8083/camel/auth/logout
+                .get("/logout").produces(String.valueOf(MediaType.APPLICATION_JSON)).bindingMode(RestBindingMode.auto).outType(String.class).to("direct:logout");
 
         from("direct:login")
                 .process(new Processor() {
                     @Override
                     public void process(Exchange exchange) throws Exception {
-                        exchange.getIn().setHeader(Exchange.HTTP_QUERY, "username="+exchange.getIn().getHeader("username", String.class)+"&password="+exchange.getIn().getHeader("password", String.class));
+                        exchange.getIn().setHeader(Exchange.HTTP_QUERY, "username=" + exchange.getIn().getHeader("username", String.class) + "&password=" + exchange.getIn().getHeader("password", String.class));
                     }
                 })
                 .setHeader(Exchange.HTTP_URI, simple(URI_LOGIN_SERVICE + "/login"))
@@ -69,7 +66,7 @@ public class AuthServiceRoute extends RouteBuilder {
                     @Override
                     public void process(Exchange exchange) throws Exception {
                         System.out.println("Save cookie " + exchange.getIn().getHeader("cookie"));
-                        StoredCookie.cookie=(String) exchange.getIn().getHeader("cookie");
+                        StoredCookie.cookie = (String) exchange.getIn().getHeader("cookie");
 
                     }
                 })
@@ -83,17 +80,11 @@ public class AuthServiceRoute extends RouteBuilder {
                     }
                 })
                 .end();
-        ;
+
 
         from("direct:logout")
                 .setHeader(Exchange.HTTP_URI, simple(URI_LOGIN_SERVICE + "/logout"))
-                .process(new Processor() {
-                    @Override
-                    public void process(Exchange exchange) throws Exception {
-                        exchange.getIn().setHeader("cookie", StoredCookie.cookie);
-
-                    }
-                })
+                .process(new CookieProcessor())
                 .to(URI_LOGIN_SERVICE + "/logout")
                 .process(new Processor() {
                     @Override

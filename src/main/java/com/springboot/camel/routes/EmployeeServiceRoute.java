@@ -1,14 +1,13 @@
 package com.springboot.camel.routes;
 
-import com.springboot.camel.StoredCookie;
 import com.springboot.camel.model.AvailabilityByEmployeeInputDto;
 import com.springboot.camel.model.EmployeeDto;
 import com.springboot.camel.model.TaskDto;
+import com.springboot.camel.processor.CookieProcessor;
+import com.springboot.camel.processor.PrintBodyResponseProcessor;
 import org.apache.camel.Exchange;
-import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.jackson.JacksonDataFormat;
-import org.apache.camel.model.dataformat.JsonLibrary;
 import org.apache.camel.model.rest.RestBindingMode;
 import org.apache.camel.model.rest.RestParamType;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,7 +18,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class EmployeeServiceRoute extends RouteBuilder {
 
-    private final String URI_EMPLOYEE_SERVICE = "http://localhost:8080/employees";
+    private final String URI_EMPLOYEE_SERVICE = "http4://localhost:8080/employees";
     @Value("${server.port}")
     String serverPort;
     @Value("${springboot.api.path}")
@@ -49,56 +48,48 @@ public class EmployeeServiceRoute extends RouteBuilder {
 
         //EMPLOYEES
         rest("/api/employees").description("Employee Service").id("employees-route")
-                //GET http://localhost:8083/camel/api/employees
+                //GET http://localhost:8083/camel/api/employees/all
                 .get("/all").produces(String.valueOf(MediaType.APPLICATION_JSON)).bindingMode(RestBindingMode.auto).outType(String.class).to("direct:employees")
 
+                //GET http://localhost:8083/camel/api/employees/?employeeId={employeeId}
                 .get("/?employeeId={employeeId}").param().name("employeeId").type(RestParamType.header).endParam()
                 .produces(String.valueOf(MediaType.APPLICATION_JSON)).bindingMode(RestBindingMode.auto).outType(String.class).to("direct:employeeById")
 
-                //POST http://localhost:8083/camel/api/employees
+                //POST http://localhost:8083/camel/api/employees/?admin={admin}
                 .post("/?admin={admin}").param().name("admin").type(RestParamType.header).endParam()
                 .produces(String.valueOf(MediaType.APPLICATION_JSON)).consumes(String.valueOf(MediaType.APPLICATION_JSON)).bindingMode(RestBindingMode.auto)
                 .type(EmployeeDto.class).enableCORS(true).outType(String.class).to("direct:postEmployee")
 
+                //PUT http://localhost:8083/camel/api/employees
                 .put().produces(String.valueOf(MediaType.APPLICATION_JSON)).consumes(String.valueOf(MediaType.APPLICATION_JSON)).bindingMode(RestBindingMode.auto)
                 .type(EmployeeDto.class).enableCORS(true).outType(String.class).to("direct:putEmployee")
 
+                //DELETE http://localhost:8083/camel/api/employees/?employeeId={employeeId}
                 .delete("/?employeeId={employeeId}").param().name("employeeId").type(RestParamType.header).endParam()
                 .produces(String.valueOf(MediaType.APPLICATION_JSON)).bindingMode(RestBindingMode.auto)
                 .outType(String.class).to("direct:deleteEmployee")
 
-                .get("/employeesByTeamAndTask/?teamId={teamId}").param().name("teamId").type(RestParamType.header).endParam()
+                //POST http://localhost:8083/camel/api/employees/employeesByTeamAndTask/?teamId={teamId}
+                .post("/employeesByTeamAndTask/?teamId={teamId}").param().name("teamId").type(RestParamType.header).endParam()
                 .produces(String.valueOf(MediaType.APPLICATION_JSON)).consumes(String.valueOf(MediaType.APPLICATION_JSON))
-                .bindingMode(RestBindingMode.auto).type(TaskDto.class).enableCORS(true).outType(String.class)
+                .bindingMode(RestBindingMode.auto).skipBindingOnErrorCode(false).type(TaskDto.class).enableCORS(true).outType(String.class)
                 .to("direct:employeesByTeamAndTask")
 
-                .get("/availability").produces(String.valueOf(MediaType.APPLICATION_JSON)).consumes(String.valueOf(MediaType.APPLICATION_JSON))
+                //POST http://localhost:8083/camel/api/employees/availability
+                .post("/availability").produces(String.valueOf(MediaType.APPLICATION_JSON)).consumes(String.valueOf(MediaType.APPLICATION_JSON))
                 .bindingMode(RestBindingMode.auto).type(AvailabilityByEmployeeInputDto.class).enableCORS(true).outType(String.class)
                 .to("direct:availability");
 
 
-        //EMPLOYEES
         from("direct:employees")
                 .setHeader(Exchange.HTTP_URI, simple(URI_EMPLOYEE_SERVICE))
-                .process(new Processor() {
-                    @Override
-                    public void process(Exchange exchange) throws Exception {
-                        System.out.println("StoredCookie.cookie della get: " + exchange.getIn().getHeader("cookie"));
-                        exchange.getIn().setHeader("cookie", StoredCookie.cookie);
-
-                    }
-                })
+                .process(new CookieProcessor())
                 .to(URI_EMPLOYEE_SERVICE);
 
         from("direct:employeeById")
                 .setHeader(Exchange.HTTP_URI, simple(URI_EMPLOYEE_SERVICE + "/${header.employeeId}"))
                 .setHeader(Exchange.HTTP_QUERY, constant(""))
-                .process(new Processor() {
-                    @Override
-                    public void process(Exchange exchange) throws Exception {
-                        exchange.getIn().setHeader("cookie", StoredCookie.cookie);
-                    }
-                })
+                .process(new CookieProcessor())
                 .to(URI_EMPLOYEE_SERVICE + "/${header.employeeId}");
 
         from("direct:postEmployee")
@@ -106,81 +97,40 @@ public class EmployeeServiceRoute extends RouteBuilder {
                 .convertBodyTo(EmployeeDto.class)
                 .marshal(jsonDataFormat)
                 .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(201))
-                .process(new Processor() {
-                    @Override
-                    public void process(Exchange exchange) throws Exception {
-                        exchange.getIn().setHeader("cookie", StoredCookie.cookie);
-
-                    }
-                })
+                .process(new CookieProcessor())
                 .to(URI_EMPLOYEE_SERVICE + "/${header.admin}")
-                .unmarshal().json(JsonLibrary.Jackson, EmployeeDto.class)
-                .process(new Processor() {
-                    @Override
-                    public void process(Exchange exchange) throws Exception {
-                        System.out.println("Post empl " + exchange.getIn().getBody(EmployeeDto.class));
-                    }
-                })
-        ;
+                .process(new PrintBodyResponseProcessor());
 
         from("direct:putEmployee")
                 .setHeader(Exchange.HTTP_URI, simple(URI_EMPLOYEE_SERVICE))
                 .convertBodyTo(EmployeeDto.class)
                 .marshal(jsonDataFormat)
                 .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(201))
-                .process(new Processor() {
-                    @Override
-                    public void process(Exchange exchange) throws Exception {
-                        exchange.getIn().setHeader("cookie", StoredCookie.cookie);
-
-                    }
-                })
+                .process(new CookieProcessor())
                 .to(URI_EMPLOYEE_SERVICE)
-                .unmarshal().json(JsonLibrary.Jackson, EmployeeDto.class)
-                .process(new Processor() {
-                    @Override
-                    public void process(Exchange exchange) throws Exception {
-                        System.out.println("Put empl " + exchange.getIn().getBody(EmployeeDto.class));
-                    }
-                })
-        ;
+                .process(new PrintBodyResponseProcessor());
 
         from("direct:deleteEmployee")
                 .setHeader(Exchange.HTTP_URI, simple(URI_EMPLOYEE_SERVICE + "/${header.employeeId}"))
-                .process(new Processor() {
-                    @Override
-                    public void process(Exchange exchange) throws Exception {
-                        exchange.getIn().setHeader("cookie", StoredCookie.cookie);
-                    }
-                })
+                .process(new CookieProcessor())
                 .to(URI_EMPLOYEE_SERVICE + "/${header.employeeId}");
 
         from("direct:employeesByTeamAndTask")
                 .setHeader(Exchange.HTTP_URI, simple(URI_EMPLOYEE_SERVICE + "/employeesByTeamAndTask/${header.teamId}"))
-                .setHeader("Accept", constant("application/json"))
+                .removeHeader(Exchange.HTTP_QUERY)
                 .convertBodyTo(TaskDto.class)
-                .marshal(jsonDataFormat)
-                .process(new Processor() {
-                    @Override
-                    public void process(Exchange exchange) throws Exception {
-                        exchange.getIn().setHeader("cookie", StoredCookie.cookie);
-                    }
-                })
+                .marshal(new JacksonDataFormat(TaskDto.class))
+                .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(201))
+                .process(new CookieProcessor())
                 .to(URI_EMPLOYEE_SERVICE + "/employeesByTeamAndTask/${header.teamId}");
+
 
         from("direct:availability")
                 .setHeader(Exchange.HTTP_URI, simple(URI_EMPLOYEE_SERVICE + "/availability"))
                 .convertBodyTo(AvailabilityByEmployeeInputDto.class)
-                .marshal(jsonDataFormat)
-                .process(new Processor() {
-                    @Override
-                    public void process(Exchange exchange) throws Exception {
-                        exchange.getIn().setHeader("cookie", StoredCookie.cookie);
-
-                    }
-                })
-                .to(URI_EMPLOYEE_SERVICE + "/availability")
-        ;
+                .marshal(new JacksonDataFormat(AvailabilityByEmployeeInputDto.class))
+                .process(new CookieProcessor())
+                .to(URI_EMPLOYEE_SERVICE + "/availability");
 
 
     }

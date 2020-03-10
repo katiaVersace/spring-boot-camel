@@ -1,11 +1,11 @@
 package com.springboot.camel.routes;
 
-import com.springboot.camel.StoredCookie;
 import com.springboot.camel.model.TaskDto;
+import com.springboot.camel.processor.CookieProcessor;
+import com.springboot.camel.processor.PrintBodyResponseProcessor;
 import org.apache.camel.Exchange;
-import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.component.http.HttpMethods;
+import org.apache.camel.component.http4.HttpMethods;
 import org.apache.camel.component.jackson.JacksonDataFormat;
 import org.apache.camel.model.dataformat.JsonLibrary;
 import org.apache.camel.model.rest.RestBindingMode;
@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class TaskServiceRoute extends RouteBuilder {
 
-    private final String URI_TASK_SERVICE = "http://localhost:8080/tasks";
+    private final String URI_TASK_SERVICE = "http4://localhost:8080/tasks";
 
     @Value("${server.port}")
     String serverPort;
@@ -30,7 +30,7 @@ public class TaskServiceRoute extends RouteBuilder {
         JacksonDataFormat jsonDataFormat = new JacksonDataFormat(TaskDto.class);
 
 
-        // http://localhost:8082/camel/api-doc
+        // http://localhost:8083/camel/api-doc
         restConfiguration()
                 .contextPath(contextPath) //
                 .port(serverPort)
@@ -46,11 +46,12 @@ public class TaskServiceRoute extends RouteBuilder {
                 .dataFormatProperty("prettyPrint", "true");
 
 
-        //TASKS
         rest("/api/tasks").description("Task Service").id("tasks-route")
+
                 //GET http://localhost:8083/camel/api/tasks
                 .get("/all").produces(String.valueOf(MediaType.APPLICATION_JSON)).bindingMode(RestBindingMode.auto).outType(String.class).to("direct:tasks")
 
+                //GET http://localhost:8083/camel/api/tasks/?taskId={taskId}
                 .get("/?taskId={taskId}").param().name("taskId").type(RestParamType.header).endParam()
                 .produces(String.valueOf(MediaType.APPLICATION_JSON)).bindingMode(RestBindingMode.auto).outType(String.class).to("direct:taskById")
 
@@ -58,43 +59,33 @@ public class TaskServiceRoute extends RouteBuilder {
                 .post().produces(String.valueOf(MediaType.APPLICATION_JSON)).consumes(String.valueOf(MediaType.APPLICATION_JSON)).bindingMode(RestBindingMode.auto)
                 .type(TaskDto.class).enableCORS(true).outType(String.class).to("direct:postTask")
 
+                //PUT http://localhost:8083/camel/api/tasks
                 .put().produces(String.valueOf(MediaType.APPLICATION_JSON)).consumes(String.valueOf(MediaType.APPLICATION_JSON)).bindingMode(RestBindingMode.auto)
                 .type(TaskDto.class).enableCORS(true).outType(String.class).to("direct:putTask")
 
+                //PATCH http://localhost:8083/camel/api/tasks
                 .patch().produces(String.valueOf(MediaType.APPLICATION_JSON)).consumes(String.valueOf(MediaType.APPLICATION_JSON)).bindingMode(RestBindingMode.auto)
                 .type(TaskDto.class).enableCORS(true).outType(String.class).to("direct:patchTask")
 
+                //DELETE http://localhost:8083/camel/api/tasks/?taskId={taskId}
                 .delete("/?taskId={taskId}").param().name("taskId").type(RestParamType.header).endParam()
                 .produces(String.valueOf(MediaType.APPLICATION_JSON)).bindingMode(RestBindingMode.auto)
                 .outType(String.class).to("direct:deleteTask")
 
+                //GET http://localhost:8083/camel/api/tasks/tasksByEmployee/?employeeId={employeeId}
                 .get("/tasksByEmployee/?employeeId={employeeId}").param().name("employeeId").type(RestParamType.header).endParam()
                 .produces(String.valueOf(MediaType.APPLICATION_JSON)).bindingMode(RestBindingMode.auto)
-                .outType(String.class).to("direct:tasksByEmployee")
-        ;
+                .outType(String.class).to("direct:tasksByEmployee");
 
-        //TASKS
 
         from("direct:tasks")
                 .setHeader(Exchange.HTTP_URI, simple(URI_TASK_SERVICE))
-                .process(new Processor() {
-                    @Override
-                    public void process(Exchange exchange) throws Exception {
-                        System.out.println("StoredCookie.cookie della get: " + exchange.getIn().getHeader("cookie"));
-                        exchange.getIn().setHeader("cookie", StoredCookie.cookie);
-
-                    }
-                })
+                .process(new CookieProcessor())
                 .to(URI_TASK_SERVICE);
 
         from("direct:taskById")
                 .setHeader(Exchange.HTTP_URI, simple(URI_TASK_SERVICE + "/${header.taskId}"))
-                .process(new Processor() {
-                    @Override
-                    public void process(Exchange exchange) throws Exception {
-                        exchange.getIn().setHeader("cookie", StoredCookie.cookie);
-                    }
-                })
+                .process(new CookieProcessor())
                 .to(URI_TASK_SERVICE + "/${header.taskId}");
 
         from("direct:postTask")
@@ -102,89 +93,37 @@ public class TaskServiceRoute extends RouteBuilder {
                 .setHeader(Exchange.HTTP_URI, simple(URI_TASK_SERVICE))
                 .convertBodyTo(TaskDto.class)
                 .marshal(jsonDataFormat)
-                .process(new Processor() {
-                    @Override
-                    public void process(Exchange exchange) throws Exception {
-                        exchange.getIn().setHeader("cookie", StoredCookie.cookie);
-
-                    }
-                })
+                .process(new CookieProcessor())
                 .to(URI_TASK_SERVICE)
-                .unmarshal().json(JsonLibrary.Jackson, TaskDto.class)
-                .process(new Processor() {
-                    @Override
-                    public void process(Exchange exchange) throws Exception {
-                        System.out.println("Post task " + exchange.getIn().getBody(TaskDto.class));
-                    }
-                })
-
-        ;
+                .process(new PrintBodyResponseProcessor());
 
         from("direct:putTask")
                 .setHeader(Exchange.HTTP_URI, simple(URI_TASK_SERVICE))
                 .convertBodyTo(TaskDto.class)
                 .marshal(jsonDataFormat)
                 .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(201))
-                .process(new Processor() {
-                    @Override
-                    public void process(Exchange exchange) throws Exception {
-                        exchange.getIn().setHeader("cookie", StoredCookie.cookie);
-
-                    }
-                })
+                .process(new CookieProcessor())
                 .to(URI_TASK_SERVICE)
-                .unmarshal().json(JsonLibrary.Jackson, TaskDto.class)
-                .process(new Processor() {
-                    @Override
-                    public void process(Exchange exchange) throws Exception {
-                        System.out.println("Put task " + exchange.getIn().getBody(TaskDto.class));
-                    }
-                })
-        ;
+                .process(new PrintBodyResponseProcessor());
 
         from("direct:patchTask")
                 .setHeader(Exchange.HTTP_URI, simple(URI_TASK_SERVICE))
                 .convertBodyTo(TaskDto.class)
                 .marshal(jsonDataFormat)
-                .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(201))
-                .process(new Processor() {
-                    @Override
-                    public void process(Exchange exchange) throws Exception {
-                        exchange.getIn().setHeader("cookie", StoredCookie.cookie);
-
-                    }
-                })
+                .process(new CookieProcessor())
                 .to(URI_TASK_SERVICE)
                 .unmarshal().json(JsonLibrary.Jackson, TaskDto.class)
-                .process(new Processor() {
-                    @Override
-                    public void process(Exchange exchange) throws Exception {
-                        System.out.println("Patch task " + exchange.getIn().getBody(TaskDto.class));
-                    }
-                })
-        //
-        ;
+                .process(new PrintBodyResponseProcessor());
 
         from("direct:deleteTask")
                 .setHeader(Exchange.HTTP_URI, simple(URI_TASK_SERVICE + "/${header.taskId}"))
-                .process(new Processor() {
-                    @Override
-                    public void process(Exchange exchange) throws Exception {
-                        exchange.getIn().setHeader("cookie", StoredCookie.cookie);
-                    }
-                })
+                .process(new CookieProcessor())
                 .to(URI_TASK_SERVICE + "/${header.taskId}");
 
         from("direct:tasksByEmployee")
                 .setHeader(Exchange.HTTP_URI, simple(URI_TASK_SERVICE + "/tasksByEmployee/${header.employeeId}"))
-                .process(new Processor() {
-                    @Override
-                    public void process(Exchange exchange) throws Exception {
-                        exchange.getIn().setHeader("cookie", StoredCookie.cookie);
-                    }
-                })
+                .process(new CookieProcessor())
                 .to(URI_TASK_SERVICE + "/tasksByEmployee/${header.employeeId}");
-
 
     }
 
