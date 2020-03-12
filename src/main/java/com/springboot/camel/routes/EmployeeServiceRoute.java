@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class EmployeeServiceRoute extends RouteBuilder {
 
-    private final String URI_EMPLOYEE_SERVICE = "http4://localhost:8080/employees";
+    private final String URI_EMPLOYEE_SERVICE = "http4://localhost:8100/employees";
     @Value("${server.port}")
     String serverPort;
     @Value("${springboot.api.path}")
@@ -69,11 +69,11 @@ public class EmployeeServiceRoute extends RouteBuilder {
                 .produces(String.valueOf(MediaType.APPLICATION_JSON)).bindingMode(RestBindingMode.auto)
                 .outType(String.class).to("direct:deleteEmployee")
 
-                //POST http://localhost:8083/camel/api/employees/employeesByTeamAndTask/?teamId={teamId}
-                .post("/employeesByTeamAndTask/?teamId={teamId}").param().name("teamId").type(RestParamType.header).endParam()
-                .produces(String.valueOf(MediaType.APPLICATION_JSON)).consumes(String.valueOf(MediaType.APPLICATION_JSON))
-                .bindingMode(RestBindingMode.auto).skipBindingOnErrorCode(false).type(TaskDto.class).enableCORS(true).outType(String.class)
-                .to("direct:employeesByTeamAndTask")
+//                //POST http://localhost:8083/camel/api/employees/employeesByTeamAndTask/?teamId={teamId}
+//                .post("/employeesByTeamAndTask/?teamId={teamId}").param().name("teamId").type(RestParamType.header).endParam()
+//                .produces(String.valueOf(MediaType.APPLICATION_JSON)).consumes(String.valueOf(MediaType.APPLICATION_JSON))
+//                .bindingMode(RestBindingMode.auto).skipBindingOnErrorCode(false).type(TaskDto.class).enableCORS(true).outType(String.class)
+//                .to("direct:employeesByTeamAndTask")
 
                 //POST http://localhost:8083/camel/api/employees/availability
                 .post("/availability").produces(String.valueOf(MediaType.APPLICATION_JSON)).consumes(String.valueOf(MediaType.APPLICATION_JSON))
@@ -115,14 +115,14 @@ public class EmployeeServiceRoute extends RouteBuilder {
                 .process(new CookieProcessor())
                 .to(URI_EMPLOYEE_SERVICE + "/${header.employeeId}");
 
-        from("direct:employeesByTeamAndTask")
-                .setHeader(Exchange.HTTP_URI, simple(URI_EMPLOYEE_SERVICE + "/employeesByTeamAndTask/${header.teamId}"))
-                .removeHeader(Exchange.HTTP_QUERY)
-                .convertBodyTo(TaskDto.class)
-                .marshal(new JacksonDataFormat(TaskDto.class))
-                .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(201))
-                .process(new CookieProcessor())
-                .to(URI_EMPLOYEE_SERVICE + "/employeesByTeamAndTask/${header.teamId}");
+//        from("direct:employeesByTeamAndTask")
+//                .setHeader(Exchange.HTTP_URI, simple(URI_EMPLOYEE_SERVICE + "/employeesByTeamAndTask/${header.teamId}"))
+//                .removeHeader(Exchange.HTTP_QUERY)
+//                .convertBodyTo(TaskDto.class)
+//                .marshal(new JacksonDataFormat(TaskDto.class))
+//                .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(201))
+//                .process(new CookieProcessor())
+//                .to(URI_EMPLOYEE_SERVICE + "/employeesByTeamAndTask/${header.teamId}");
 
 
         from("direct:availability")

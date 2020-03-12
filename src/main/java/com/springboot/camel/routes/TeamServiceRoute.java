@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class TeamServiceRoute extends RouteBuilder {
 
-    private final String URI_TEAM_SERVICE = "http4://localhost:8080/teams";
+    private final String URI_TEAM_SERVICE = "http4://localhost:8300/teams";
 
     @Value("${server.port}")
     String serverPort;
@@ -75,7 +75,13 @@ public class TeamServiceRoute extends RouteBuilder {
                 //POST http://localhost:8083/camel/api/teams/assignTaskToTeam/?teamId={teamId}
                 .post("/assignTaskToTeam/?teamId={teamId}").param().name("teamId").type(RestParamType.header).endParam()
                 .produces(String.valueOf(MediaType.APPLICATION_JSON)).consumes(String.valueOf(MediaType.APPLICATION_JSON)).bindingMode(RestBindingMode.auto)
-                .type(TaskDto.class).enableCORS(true).outType(TaskDto.class).to("direct:assignTaskToTeam");
+                .type(TaskDto.class).enableCORS(true).outType(TaskDto.class).to("direct:assignTaskToTeam")
+
+                //POST http://localhost:8083/camel/api/teams/employeesByTeamAndTask/?teamId={teamId}
+                .post("/employeesByTeamAndTask/?teamId={teamId}").param().name("teamId").type(RestParamType.header).endParam()
+                .produces(String.valueOf(MediaType.APPLICATION_JSON)).consumes(String.valueOf(MediaType.APPLICATION_JSON))
+                .bindingMode(RestBindingMode.auto).skipBindingOnErrorCode(false).type(TaskDto.class).enableCORS(true).outType(String.class)
+                .to("direct:employeesByTeamAndTask");
 
 
         from("direct:postTeam")
@@ -124,6 +130,15 @@ public class TeamServiceRoute extends RouteBuilder {
                 .setHeader(Exchange.HTTP_URI, simple(URI_TEAM_SERVICE + "/${header.teamId}"))
                 .process(new CookieProcessor())
                 .to(URI_TEAM_SERVICE + "/${header.teamId}");
+
+        from("direct:employeesByTeamAndTask")
+                .setHeader(Exchange.HTTP_URI, simple(URI_TEAM_SERVICE + "/employeesByTeamAndTask/${header.teamId}"))
+                .removeHeader(Exchange.HTTP_QUERY)
+                .convertBodyTo(TaskDto.class)
+                .marshal(new JacksonDataFormat(TaskDto.class))
+                .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(201))
+                .process(new CookieProcessor())
+                .to(URI_TEAM_SERVICE + "/employeesByTeamAndTask/${header.teamId}");
 
 
     }

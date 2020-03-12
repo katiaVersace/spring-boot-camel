@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class TaskServiceRoute extends RouteBuilder {
 
-    private final String URI_TASK_SERVICE = "http4://localhost:8080/tasks";
+    private final String URI_TASK_SERVICE = "http4://localhost:8200/tasks";
 
     @Value("${server.port}")
     String serverPort;
