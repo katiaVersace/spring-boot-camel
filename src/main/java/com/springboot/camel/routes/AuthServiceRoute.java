@@ -43,12 +43,12 @@ public class AuthServiceRoute extends RouteBuilder {
 
         //LOGIN
         rest("/api/auth").description("Authentication Service").id("auth-route")
-                //POST http://localhost:8083/camel/auth/login
+                //POST http://localhost:8400/camel/auth/login
                 .post("/login").produces(String.valueOf(MediaType.APPLICATION_JSON)).consumes(String.valueOf(MediaType.APPLICATION_FORM_URLENCODED))
                 .bindingMode(RestBindingMode.auto)
                 .enableCORS(true).outType(String.class).to("direct:login")
 
-                //GET http://localhost:8083/camel/auth/logout
+                //GET http://localhost:8400/camel/auth/logout
                 .get("/logout").produces(String.valueOf(MediaType.APPLICATION_JSON)).bindingMode(RestBindingMode.auto).outType(String.class).to("direct:logout");
 
         from("direct:login")

@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class EmployeeServiceRoute extends RouteBuilder {
 
-    private final String URI_EMPLOYEE_SERVICE = "http4://localhost:8100/employees";
+    private final String URI_EMPLOYEE_SERVICE = "http4://employee-service:8100/employees";
     @Value("${server.port}")
     String serverPort;
     @Value("${springboot.api.path}")
@@ -48,34 +48,34 @@ public class EmployeeServiceRoute extends RouteBuilder {
 
         //EMPLOYEES
         rest("/api/employees").description("Employee Service").id("employees-route")
-                //GET http://localhost:8083/camel/api/employees/all
+                //GET http://localhost:8400/camel/api/employees/all
                 .get("/all").produces(String.valueOf(MediaType.APPLICATION_JSON)).bindingMode(RestBindingMode.auto).outType(String.class).to("direct:employees")
 
-                //GET http://localhost:8083/camel/api/employees/?employeeId={employeeId}
+                //GET http://localhost:8400/camel/api/employees/?employeeId={employeeId}
                 .get("/?employeeId={employeeId}").param().name("employeeId").type(RestParamType.header).endParam()
                 .produces(String.valueOf(MediaType.APPLICATION_JSON)).bindingMode(RestBindingMode.auto).outType(String.class).to("direct:employeeById")
 
-                //POST http://localhost:8083/camel/api/employees/?admin={admin}
+                //POST http://localhost:8400/camel/api/employees/?admin={admin}
                 .post("/?admin={admin}").param().name("admin").type(RestParamType.header).endParam()
                 .produces(String.valueOf(MediaType.APPLICATION_JSON)).consumes(String.valueOf(MediaType.APPLICATION_JSON)).bindingMode(RestBindingMode.auto)
                 .type(EmployeeDto.class).enableCORS(true).outType(String.class).to("direct:postEmployee")
 
-                //PUT http://localhost:8083/camel/api/employees
+                //PUT http://localhost:8400/camel/api/employees
                 .put().produces(String.valueOf(MediaType.APPLICATION_JSON)).consumes(String.valueOf(MediaType.APPLICATION_JSON)).bindingMode(RestBindingMode.auto)
                 .type(EmployeeDto.class).enableCORS(true).outType(String.class).to("direct:putEmployee")
 
-                //DELETE http://localhost:8083/camel/api/employees/?employeeId={employeeId}
+                //DELETE http://localhost:8400/camel/api/employees/?employeeId={employeeId}
                 .delete("/?employeeId={employeeId}").param().name("employeeId").type(RestParamType.header).endParam()
                 .produces(String.valueOf(MediaType.APPLICATION_JSON)).bindingMode(RestBindingMode.auto)
                 .outType(String.class).to("direct:deleteEmployee")
 
-//                //POST http://localhost:8083/camel/api/employees/employeesByTeamAndTask/?teamId={teamId}
+//                //POST http://localhost:8400/camel/api/employees/employeesByTeamAndTask/?teamId={teamId}
 //                .post("/employeesByTeamAndTask/?teamId={teamId}").param().name("teamId").type(RestParamType.header).endParam()
 //                .produces(String.valueOf(MediaType.APPLICATION_JSON)).consumes(String.valueOf(MediaType.APPLICATION_JSON))
 //                .bindingMode(RestBindingMode.auto).skipBindingOnErrorCode(false).type(TaskDto.class).enableCORS(true).outType(String.class)
 //                .to("direct:employeesByTeamAndTask")
 
-                //POST http://localhost:8083/camel/api/employees/availability
+                //POST http://localhost:8400/camel/api/employees/availability
                 .post("/availability").produces(String.valueOf(MediaType.APPLICATION_JSON)).consumes(String.valueOf(MediaType.APPLICATION_JSON))
                 .bindingMode(RestBindingMode.auto).type(AvailabilityByEmployeeInputDto.class).enableCORS(true).outType(String.class)
                 .to("direct:availability");

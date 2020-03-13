@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class TaskServiceRoute extends RouteBuilder {
 
-    private final String URI_TASK_SERVICE = "http4://localhost:8200/tasks";
+    private final String URI_TASK_SERVICE = "http4://task-service:8200/tasks";
 
     @Value("${server.port}")
     String serverPort;
@@ -30,7 +30,7 @@ public class TaskServiceRoute extends RouteBuilder {
         JacksonDataFormat jsonDataFormat = new JacksonDataFormat(TaskDto.class);
 
 
-        // http://localhost:8083/camel/api-doc
+        // http://localhost:8400/camel/api-doc
         restConfiguration()
                 .contextPath(contextPath) //
                 .port(serverPort)
@@ -48,31 +48,31 @@ public class TaskServiceRoute extends RouteBuilder {
 
         rest("/api/tasks").description("Task Service").id("tasks-route")
 
-                //GET http://localhost:8083/camel/api/tasks
+                //GET http://localhost:8400/camel/api/tasks
                 .get("/all").produces(String.valueOf(MediaType.APPLICATION_JSON)).bindingMode(RestBindingMode.auto).outType(String.class).to("direct:tasks")
 
-                //GET http://localhost:8083/camel/api/tasks/?taskId={taskId}
+                //GET http://localhost:8400/camel/api/tasks/?taskId={taskId}
                 .get("/?taskId={taskId}").param().name("taskId").type(RestParamType.header).endParam()
                 .produces(String.valueOf(MediaType.APPLICATION_JSON)).bindingMode(RestBindingMode.auto).outType(String.class).to("direct:taskById")
 
-                //POST http://localhost:8083/camel/api/tasks
+                //POST http://localhost:8400/camel/api/tasks
                 .post().produces(String.valueOf(MediaType.APPLICATION_JSON)).consumes(String.valueOf(MediaType.APPLICATION_JSON)).bindingMode(RestBindingMode.auto)
                 .type(TaskDto.class).enableCORS(true).outType(String.class).to("direct:postTask")
 
-                //PUT http://localhost:8083/camel/api/tasks
+                //PUT http://localhost:8400/camel/api/tasks
                 .put().produces(String.valueOf(MediaType.APPLICATION_JSON)).consumes(String.valueOf(MediaType.APPLICATION_JSON)).bindingMode(RestBindingMode.auto)
                 .type(TaskDto.class).enableCORS(true).outType(String.class).to("direct:putTask")
 
-                //PATCH http://localhost:8083/camel/api/tasks
+                //PATCH http://localhost:8400/camel/api/tasks
                 .patch().produces(String.valueOf(MediaType.APPLICATION_JSON)).consumes(String.valueOf(MediaType.APPLICATION_JSON)).bindingMode(RestBindingMode.auto)
                 .type(TaskDto.class).enableCORS(true).outType(String.class).to("direct:patchTask")
 
-                //DELETE http://localhost:8083/camel/api/tasks/?taskId={taskId}
+                //DELETE http://localhost:8400/camel/api/tasks/?taskId={taskId}
                 .delete("/?taskId={taskId}").param().name("taskId").type(RestParamType.header).endParam()
                 .produces(String.valueOf(MediaType.APPLICATION_JSON)).bindingMode(RestBindingMode.auto)
                 .outType(String.class).to("direct:deleteTask")
 
-                //GET http://localhost:8083/camel/api/tasks/tasksByEmployee/?employeeId={employeeId}
+                //GET http://localhost:8400/camel/api/tasks/tasksByEmployee/?employeeId={employeeId}
                 .get("/tasksByEmployee/?employeeId={employeeId}").param().name("employeeId").type(RestParamType.header).endParam()
                 .produces(String.valueOf(MediaType.APPLICATION_JSON)).bindingMode(RestBindingMode.auto)
                 .outType(String.class).to("direct:tasksByEmployee");

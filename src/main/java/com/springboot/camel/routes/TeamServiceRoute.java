@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class TeamServiceRoute extends RouteBuilder {
 
-    private final String URI_TEAM_SERVICE = "http4://localhost:8300/teams";
+    private final String URI_TEAM_SERVICE = "http4://team-service:8300/teams";
 
     @Value("${server.port}")
     String serverPort;
@@ -47,37 +47,37 @@ public class TeamServiceRoute extends RouteBuilder {
 
         rest("/api/teams").description("Team Service").id("teams-route")
 
-                //GET http://localhost:8083/camel/api/teams/all
+                //GET http://localhost:8400/camel/api/teams/all
                 .get("/all").produces(String.valueOf(MediaType.APPLICATION_JSON)).bindingMode(RestBindingMode.auto)
                 .enableCORS(true).outType(String.class).to("direct:teams")
 
-                //GET http://localhost:8083/camel/api/teams/?teamId={teamId}
+                //GET http://localhost:8400/camel/api/teams/?teamId={teamId}
                 .get("/?teamId={teamId}").param().name("teamId").type(RestParamType.header).endParam()
                 .produces(String.valueOf(MediaType.APPLICATION_JSON)).bindingMode(RestBindingMode.auto).outType(String.class).to("direct:teamById")
 
-                //POST http://localhost:8083/camel/api/teams
+                //POST http://localhost:8400/camel/api/teams
                 .post().produces(String.valueOf(MediaType.APPLICATION_JSON)).consumes(String.valueOf(MediaType.APPLICATION_JSON)).bindingMode(RestBindingMode.auto)
                 .type(TeamDto.class).enableCORS(true).outType(String.class).to("direct:postTeam")
 
-                //PUT http://localhost:8083/camel/api/teams
+                //PUT http://localhost:8400/camel/api/teams
                 .put().produces(String.valueOf(MediaType.APPLICATION_JSON)).consumes(String.valueOf(MediaType.APPLICATION_JSON)).bindingMode(RestBindingMode.auto)
                 .type(TeamDto.class).enableCORS(true).outType(String.class).to("direct:putTeam")
 
-                //DELETE http://localhost:8083/camel/api/teams/?teamId={teamId}
+                //DELETE http://localhost:8400/camel/api/teams/?teamId={teamId}
                 .delete("/?teamId={teamId}").param().name("teamId").type(RestParamType.header).endParam()
                 .produces(String.valueOf(MediaType.APPLICATION_JSON)).bindingMode(RestBindingMode.auto)
                 .outType(String.class).to("direct:deleteTeam")
 
-                //POST http://localhost:8083/camel/api/teams/randomPopulation
+                //POST http://localhost:8400/camel/api/teams/randomPopulation
                 .post("/randomPopulation").produces(String.valueOf(MediaType.APPLICATION_JSON)).consumes(String.valueOf(MediaType.APPLICATION_JSON)).bindingMode(RestBindingMode.auto)
                 .type(RandomPopulationInputDto.class).enableCORS(true).outType(String.class).to("direct:randomPopulation")
 
-                //POST http://localhost:8083/camel/api/teams/assignTaskToTeam/?teamId={teamId}
+                //POST http://localhost:8400/camel/api/teams/assignTaskToTeam/?teamId={teamId}
                 .post("/assignTaskToTeam/?teamId={teamId}").param().name("teamId").type(RestParamType.header).endParam()
                 .produces(String.valueOf(MediaType.APPLICATION_JSON)).consumes(String.valueOf(MediaType.APPLICATION_JSON)).bindingMode(RestBindingMode.auto)
                 .type(TaskDto.class).enableCORS(true).outType(TaskDto.class).to("direct:assignTaskToTeam")
 
-                //POST http://localhost:8083/camel/api/teams/employeesByTeamAndTask/?teamId={teamId}
+                //POST http://localhost:8400/camel/api/teams/employeesByTeamAndTask/?teamId={teamId}
                 .post("/employeesByTeamAndTask/?teamId={teamId}").param().name("teamId").type(RestParamType.header).endParam()
                 .produces(String.valueOf(MediaType.APPLICATION_JSON)).consumes(String.valueOf(MediaType.APPLICATION_JSON))
                 .bindingMode(RestBindingMode.auto).skipBindingOnErrorCode(false).type(TaskDto.class).enableCORS(true).outType(String.class)

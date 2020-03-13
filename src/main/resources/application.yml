@@ -1,5 +1,5 @@
 server:
-  port: 8083
+  port: 8400
 
 # for example purposes of Camel version 2.18 and below
 springboot:
